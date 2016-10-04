@@ -10,7 +10,7 @@
  *   cl -W4 -MT -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
  * Debug-mode:
  *   cl -W4 -Od -Z7 -FC -MTd -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
-  */
+ */
 
 #include "ispc_texcomp.h"
 
@@ -71,11 +71,14 @@ struct KtxHeader {
 };
 
 int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
-    const char *input_filename = "besties.jpg";
-    const char *output_filename = "besties.ktx";
-    const char *output_format_name = "BC3";
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s [input] [output] [compress_type]\n",
+                argv[0]);
+        return 1;
+    }
+    const char *input_filename = argv[1];
+    const char *output_filename = argv[2];
+    const char *output_format_name = argv[3];
     const GlFormatInfo *format_info = NULL;
     for(int f = 0; f < g_format_count; ++f) {
         if (strcmp(g_formats[f].name, output_format_name) == 0) {
@@ -94,6 +97,10 @@ int main(int argc, char *argv[]) {
     int original_components = 0;
     stbi_uc *input_pixels = stbi_load(input_filename, &input_width,
             &input_height, &original_components, input_components);
+    if (!input_pixels) {
+        fprintf(stderr, "Error loading input '%s'\n", input_filename);
+        return 2;
+    }
     printf("Loaded %s -- width=%d height=%d comp=%d\n",
             input_filename, input_width, input_height,
             original_components);
@@ -146,6 +153,10 @@ int main(int argc, char *argv[]) {
     header.numberOfMipmapLevels = 1;
     header.bytesOfKeyValueData = 0;
     FILE *output_file = fopen(output_filename, "wb");
+    if (!output_file) {
+        fprintf(stderr, "Error opening output '%s'\n", output_filename);
+        return 3;
+    }
     fwrite(&header, 1, sizeof(KtxHeader), output_file);
     fwrite(&output_surface_size, 1, sizeof(uint32_t), output_file);
     fwrite(output_surface, 1, output_surface_size, output_file);
