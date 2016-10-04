@@ -5,7 +5,7 @@
  * Clang users may also pass -fsanitize=thread to enable Clang's
  * ThreadSanitizer feature.
  *
- * For a unit test on Visual C++:
+ * To build with Visual Studio 2013:
  *   "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
  *   cl -W4 -MT -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
  * Debug-mode:
@@ -39,6 +39,34 @@ enum {
     GL_COMPRESSED_RGBA_S3TC_DXT1_EXT          = 0x83F1, // BC1 (alpha)
     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT          = 0x83F3, // BC3
     GL_COMPRESSED_RGBA_BPTC_UNORM_ARB         = 0x8E8C, // BC7
+    GL_COMPRESSED_RGBA_ASTC_4x4_KHR           = 0x93B0,
+    GL_COMPRESSED_RGBA_ASTC_5x4_KHR           = 0x93B1,
+    GL_COMPRESSED_RGBA_ASTC_5x5_KHR           = 0x93B2,
+    GL_COMPRESSED_RGBA_ASTC_6x5_KHR           = 0x93B3,
+    GL_COMPRESSED_RGBA_ASTC_6x6_KHR           = 0x93B4,
+    GL_COMPRESSED_RGBA_ASTC_8x5_KHR           = 0x93B5,
+    GL_COMPRESSED_RGBA_ASTC_8x6_KHR           = 0x93B6,
+    GL_COMPRESSED_RGBA_ASTC_8x8_KHR           = 0x93B7,
+    GL_COMPRESSED_RGBA_ASTC_10x5_KHR          = 0x93B8,
+    GL_COMPRESSED_RGBA_ASTC_10x6_KHR          = 0x93B9,
+    GL_COMPRESSED_RGBA_ASTC_10x8_KHR          = 0x93BA,
+    GL_COMPRESSED_RGBA_ASTC_10x10_KHR         = 0x93BB,
+    GL_COMPRESSED_RGBA_ASTC_12x10_KHR         = 0x93BC,
+    GL_COMPRESSED_RGBA_ASTC_12x12_KHR         = 0x93BD,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR   = 0x93D0,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR   = 0x93D1,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR   = 0x93D2,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR   = 0x93D3,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR   = 0x93D4,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR   = 0x93D5,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR   = 0x93D6,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR   = 0x93D7,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR  = 0x93D8,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR  = 0x93D9,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR  = 0x93DA,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC,
+    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD,
 };
 
 struct GlFormatInfo {
@@ -50,10 +78,18 @@ struct GlFormatInfo {
     uint32_t block_bytes;
 };
 const GlFormatInfo g_formats[] = {
-    { "BC1",  GL_COMPRESSED_RGB_S3TC_DXT1_EXT,        GL_RGB,   4, 4,  8 },
-    { "BC1a", GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,       GL_RGBA,  4, 4, 16 },
-    { "BC3",  GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,       GL_RGBA,  4, 4, 16 },
-    { "BC7",  GL_COMPRESSED_RGBA_BPTC_UNORM_ARB,      GL_RGBA,  4, 4, 16 },
+    { "BC1",     GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   GL_RGB,   4, 4,  8 },
+    { "BC1a",    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  GL_RGBA,  4, 4, 16 },
+    { "BC3",     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  GL_RGBA,  4, 4, 16 },
+    { "BC7",     GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, GL_RGBA,  4, 4, 16 },
+    { "ASTC4x4", GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   GL_RGBA,  4, 4, 16 },
+    { "ASTC5x4", GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   GL_RGBA,  5, 4, 16 },
+    { "ASTC5x5", GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   GL_RGBA,  5, 5, 16 },
+    { "ASTC6x5", GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   GL_RGBA,  6, 5, 16 },
+    { "ASTC6x6", GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   GL_RGBA,  6, 6, 16 },
+    { "ASTC8x5", GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   GL_RGBA,  8, 5, 16 },
+    { "ASTC8x6", GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   GL_RGBA,  8, 6, 16 },
+    { "ASTC8x8", GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   GL_RGBA,  8, 8, 16 },
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
 
@@ -176,7 +212,8 @@ int main(int argc, char *argv[]) {
         input_surface.width  = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
         input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
         input_surface.stride = input_surface.width * input_components;
-
+        printf("compressing mip %u: width=%d height=%d pitch_x=%d pitch_y=%d\n", i, mip_width, mip_height, input_surface.width, input_surface.height);
+ 
         int num_blocks = (input_surface.width / block_dim_x)
             * (input_surface.height / block_dim_y);
         output_mip_sizes[i] = num_blocks * bytes_per_block;
@@ -194,6 +231,17 @@ int main(int argc, char *argv[]) {
                 GetProfile_alpha_basic(&enc_settings);
             }
             CompressBlocksBC7(&input_surface, output_mip_pixels[i],
+                    &enc_settings);
+        } else if (strncmp(output_format_name, "ASTC", 4) == 0) {
+            astc_enc_settings enc_settings = {};
+            if (original_components == 3) {
+                GetProfile_astc_fast(&enc_settings,
+                        format_info->block_dim_x, format_info->block_dim_y);
+            } else if (original_components == 4) {
+                GetProfile_astc_alpha_fast(&enc_settings,
+                        format_info->block_dim_x, format_info->block_dim_y);
+            }
+            CompressBlocksASTC(&input_surface, output_mip_pixels[i],
                     &enc_settings);
         }
         mip_width  = std::max(1, mip_width  / 2);
