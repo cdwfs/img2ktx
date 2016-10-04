@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
                 GetProfile_basic(&enc_settings);
             } else if (original_components == 4) {
                 GetProfile_alpha_basic(&enc_settings);
+            }
             CompressBlocksBC7(&input_surface, output_mip_pixels[i],
                     &enc_settings);
         }
@@ -246,6 +247,6 @@ int main(int argc, char *argv[]) {
     }
     free(output_mip_pixels);
     free(output_mip_sizes);
-        
+    
     return 0;
 }
