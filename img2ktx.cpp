@@ -1,9 +1,7 @@
 /* img2ktx
  *
- * For a unit test on g++/Clang:
- *   cc -Wall -pthread -std=c++11 -D_POSIX_C_SOURCE=199309L -g -x c -DCDS_JOB_TEST -o test_cds_job.exe cds_job.h -lstdc++ -lpthread
- * Clang users may also pass -fsanitize=thread to enable Clang's
- * ThreadSanitizer feature.
+ * To build in Linux:
+ *   cc -L. -lispc_texcomp -o img2ktx img2ktx.cpp
  *
  * To build with Visual Studio 2013:
  *   "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
