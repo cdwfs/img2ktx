@@ -112,7 +112,11 @@ int main(int argc, char *argv[]) {
     if (argc != 4) {
         fprintf(stderr, "Usage: %s [input] [output] [compress_type]\n",
                 argv[0]);
-        return 1;
+        fprintf(stderr, "compress_type values: ");
+        for(int i=0; i<g_format_count; ++i) {
+            fprintf(stderr, "%s ", g_formats[i].name);
+        }
+        return 0;
     }
     const char *input_filename = argv[1];
     const char *output_filename = argv[2];
