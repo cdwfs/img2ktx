@@ -156,11 +156,11 @@ int main(int argc, char *argv[]) {
             original_components);
     int mip_levels = 1;
     if (generate_mipmaps) {
-        int mip_width = base_width, mip_height = base_height;
-        while (mip_width > 1 || mip_height > 1) {
+        int mip_w = base_width, mip_h = base_height;
+        while (mip_w > 1 || mip_h > 1) {
             mip_levels += 1;
-            mip_width  = std::max(1, mip_width / 2);
-            mip_height = std::max(1, mip_height / 2);
+            mip_w = std::max(1, mip_w / 2);
+            mip_h = std::max(1, mip_h / 2);
         }
     }
 
@@ -289,8 +289,8 @@ int main(int argc, char *argv[]) {
     }
     size_t output_file_size = ftell(output_file);
     fclose(output_file);
-    printf("Wrote %s (format=%s, mips=%u, size=%lu)\n", output_filename,
-            output_format_name, mip_levels, output_file_size);
+    printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
+            output_format_name, mip_levels, (uint32_t)output_file_size);
 
     for(int i=0; i<mip_levels; ++i) {
         free(output_mip_pixels[i]);
