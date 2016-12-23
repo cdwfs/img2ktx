@@ -4,7 +4,7 @@
  *   cc -L. -lispc_texcomp -o img2ktx img2ktx.cpp
  *
  * To build with Visual Studio 2013:
- *   "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
+ *   "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat"
  *   cl -W4 -MT -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
  * Debug-mode:
  *   cl -W4 -Od -Z7 -FC -MTd -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
