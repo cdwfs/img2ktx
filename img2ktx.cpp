@@ -1,7 +1,7 @@
 /* img2ktx
  *
  * To build in Linux:
- *   cc -L. -lispc_texcomp -o img2ktx img2ktx.cpp
+ *   cc -L. -o img2ktx img2ktx.cpp -lispc_texcomp -lm
  *
  * To build with Visual Studio 2013:
  *   "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat"
