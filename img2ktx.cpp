@@ -22,8 +22,10 @@
 #pragma warning(pop)
 
 #include <algorithm>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
 
 enum {
     // For glFormat
@@ -91,6 +93,17 @@ const GlFormatInfo g_formats[] = {
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
 
+struct MipLevel {
+    std::vector<uint8_t> bytes;
+};
+struct ImagePixels {
+    stbi_uc* packed;  // base mip level only, tightly packed
+    std::vector<MipLevel> input_mips;  // padded
+    std::vector<MipLevel> output_mips;
+    std::vector<uint32_t> output_mip_sizes;
+};
+
+
 struct KtxHeader {
     uint8_t identifier[12];
     uint32_t endianness;
@@ -108,20 +121,46 @@ struct KtxHeader {
     uint32_t bytesOfKeyValueData;
 };
 
-int main(int argc, char *argv[]) {
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s [input] [output] [compress_type]\n",
-                argv[0]);
-        fprintf(stderr, "compress_type values: ");
-        for(int i=0; i<g_format_count; ++i) {
-            fprintf(stderr, "%s ", g_formats[i].name);
-        }
-        return 0;
+void PrintUsage(char *argv[]) {
+    fprintf(stderr, "Usage: %s [options] [input]\n", argv[0]);
+    fprintf(stderr, "options:\n");
+    fprintf(stderr, "  -o [out.ktx]      Output file [required]\n");
+    fprintf(stderr, "  -f [format]       Output format [required]\n");
+    fprintf(stderr, "  -m                Enable mipmap generation\n");
+    fprintf(stderr, "  -h                Displays this help message\n");
+    fprintf(stderr, "formats:\n  ");
+    for(int i=0; i<g_format_count; ++i) {
+        fprintf(stderr, "%s ", g_formats[i].name);
     }
-    const char *input_filename = argv[1];
-    const char *output_filename = argv[2];
-    const char *output_format_name = argv[3];
-    bool generate_mipmaps = true;
+    fprintf(stderr, "\n");
+}
+
+int main(int argc, char *argv[]) {
+    std::vector<char*> input_filenames;
+    const char *output_filename = nullptr;
+    const char *output_format_name = nullptr;
+    bool generate_mipmaps = false;
+    for(int a = 1; a < argc; ++a) {
+        if (strncmp("-o", argv[a], 3) == 0 && a+1 < argc) {
+            output_filename = argv[++a];
+        } else if (strncmp("-f", argv[a], 3) == 0 && a+1 < argc) {
+            output_format_name = argv[++a];
+        } else if (strncmp("-m", argv[a], 3) == 0) {
+            generate_mipmaps = true;
+        } else if (strncmp("-h", argv[a], 3) == 0) {
+            PrintUsage(argv);
+            return 0;
+        } else {
+            // All remaining params are input filenames
+            input_filenames.insert(input_filenames.end(), argv+a, argv+argc);
+            break;
+        }
+    }
+    if (!output_filename || !output_format_name || input_filenames.empty()) {
+        PrintUsage(argv);
+        return -1;
+    }
+    assert(input_filenames.size() == 1); // TODO(cort): !!!
 
     // Look up the output format info
     const GlFormatInfo *format_info = NULL;
@@ -132,28 +171,45 @@ int main(int argc, char *argv[]) {
         }
     }
     if (format_info == NULL) {
-        fprintf(stderr, "Error: format %s not supported\n",
-                output_format_name);
+        fprintf(stderr, "Error: format %s not supported\n", output_format_name);
         return 1;
     }
     const int bytes_per_block = format_info->block_bytes;
     const int block_dim_x = format_info->block_dim_x;
     const int block_dim_y = format_info->block_dim_y;
 
-    // Load the input file
+    // Load the input file(s)
     int base_width = 0, base_height = 0;
-    int mip_width = 0, mip_height = 0, mip_pitch_x = 0, mip_pitch_y = 0;
     int input_components = 4; // ispc_texcomp requires 32-bit RGBA input
     int original_components = 0;
-    stbi_uc *input_pixels = stbi_load(input_filename, &base_width,
+    std::vector<ImagePixels> images(input_filenames.size());
+    images[0].packed = stbi_load(input_filenames[0], &base_width,
             &base_height, &original_components, input_components);
-    if (!input_pixels) {
-        fprintf(stderr, "Error loading input '%s'\n", input_filename);
+    if (!images[0].packed) {
+        fprintf(stderr, "Error loading input '%s'\n", input_filenames[0]);
         return 2;
     }
     printf("Loaded %s -- width=%d height=%d comp=%d\n",
-            input_filename, base_width, base_height,
+            input_filenames[0], base_width, base_height,
             original_components);
+    // Subsequent files must match dimensions of the first
+    for(size_t i = 1; i < input_filenames.size(); ++i) {
+        int bw = 0, bh = 0, oc = 0;
+        images[i].packed = stbi_load(input_filenames[i], &bw, &bh, &oc, input_components);
+        if (!images[i].packed) {
+            fprintf(stderr, "Error loading input '%s'\n", input_filenames[i]);
+            return 2;
+        }
+        if (bw != base_width || bh != base_height) {
+            fprintf(stderr, "Error: input image dimensions do not match.\n");
+            fprintf(stderr, "  %s: %d x %d\n", input_filenames[0], base_width, base_height);
+            fprintf(stderr, "  %s: %d x %d\n", input_filenames[i], bw, bh);
+            return 3;
+        }
+        printf("Loaded %s -- width=%d height=%d comp=%d\n",
+                input_filenames[i], bw, bh, oc);
+    }
+    // Determine mip chain properties
     int mip_levels = 1;
     if (generate_mipmaps) {
         int mip_w = base_width, mip_h = base_height;
@@ -164,96 +220,94 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Generate the input mipmap chain. At every level, the input
+    // Generate the input mipmap chain(s). At every level, the input
     // width and height must be padded up to a multiple of the output
     // block dimensions.
-    stbi_uc **input_mip_pixels =
-        (stbi_uc**)malloc(mip_levels * sizeof(stbi_uc**));
-    mip_width  = base_width;
-    mip_height = base_height;
-    mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
-    mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
-    input_mip_pixels[0] =
-        (stbi_uc*)malloc(mip_pitch_x * mip_pitch_y * input_components);
-    // memset(input_mip_pixels[0], 0, mip_pitch_x * mip_pitch_y * input_components);
-    for(int y=0; y<base_height; ++y) {
-        memcpy(input_mip_pixels[0] + y * mip_width * input_components,
-                input_pixels + y * base_width * input_components,
-                base_width * input_components);
-    }
-    for(int i=1; i<mip_levels; ++i) {
-        int src_width  = mip_width;
-        int src_height = mip_height;
-        int src_pitch_x = mip_pitch_x;
-        //int src_pitch_y = mip_pitch_y;
-        mip_width  = std::max(1, mip_width  / 2);
-        mip_height = std::max(1, mip_height / 2);
-        mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
-        mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
-        input_mip_pixels[i] =
-            (stbi_uc*)malloc(mip_pitch_x * mip_pitch_y * input_components);
-        // memset(input_mip_pixels[i], 0, mip_pitch_x * mip_pitch_y * num_components);
-        //printf("mip %u: width=%d height=%d\n", i, mip_width, mip_height);
-        stbir_resize_uint8(
-            input_mip_pixels[i-1], src_width, src_height, src_pitch_x * input_components,
-            input_mip_pixels[i], mip_width, mip_height, mip_pitch_x * input_components,
-            input_components);
-    }
-    stbi_image_free(input_pixels);
-
-    // Generate output mip chain
-    uint8_t **output_mip_pixels =
-        (uint8_t**)malloc(mip_levels * sizeof(uint8_t**));
-    uint32_t *output_mip_sizes =
-        (uint32_t*)malloc(mip_levels * sizeof(uint32_t));
-    mip_width = base_width;
-    mip_height = base_height;
-    for(int i=0; i<mip_levels; ++i) {
-        rgba_surface input_surface = {};
-        input_surface.ptr = input_mip_pixels[i];
-        input_surface.width  = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
-        input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
-        input_surface.stride = input_surface.width * input_components;
-        printf("compressing mip %u: width=%d height=%d pitch_x=%d pitch_y=%d\n", i, mip_width, mip_height, input_surface.width, input_surface.height);
- 
-        int num_blocks = (input_surface.width / block_dim_x)
-            * (input_surface.height / block_dim_y);
-        output_mip_sizes[i] = num_blocks * bytes_per_block;
-        output_mip_pixels[i] = (uint8_t*)malloc(output_mip_sizes[i]);
-        if (      (strcmp(output_format_name, "BC1")  == 0) ||
-                (  strcmp(output_format_name, "BC1a") == 0)) {
-            CompressBlocksBC1(&input_surface, output_mip_pixels[i]);
-        } else if (strcmp(output_format_name, "BC3") == 0) {
-            CompressBlocksBC3(&input_surface, output_mip_pixels[i]);
-        } else if (strcmp(output_format_name, "BC7") == 0) {
-            bc7_enc_settings enc_settings = {};
-            if (original_components == 3) {
-                GetProfile_basic(&enc_settings);
-            } else if (original_components == 4) {
-                GetProfile_alpha_basic(&enc_settings);
-            }
-            CompressBlocksBC7(&input_surface, output_mip_pixels[i],
-                    &enc_settings);
-        } else if (strncmp(output_format_name, "ASTC", 4) == 0) {
-            astc_enc_settings enc_settings = {};
-            if (original_components == 3) {
-                GetProfile_astc_fast(&enc_settings,
-                        format_info->block_dim_x, format_info->block_dim_y);
-            } else if (original_components == 4) {
-                GetProfile_astc_alpha_fast(&enc_settings,
-                        format_info->block_dim_x, format_info->block_dim_y);
-            }
-            CompressBlocksASTC(&input_surface, output_mip_pixels[i],
-                    &enc_settings);
+    int mip_width  = base_width;
+    int mip_height = base_height;
+    int mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
+    int mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
+    for(auto& img : images) {
+        img.input_mips.resize(mip_levels);
+        img.output_mips.resize(mip_levels);
+        img.output_mip_sizes.resize(mip_levels);
+        // Populate padded input mip level 0
+        img.input_mips[0].bytes.resize(mip_pitch_x * mip_pitch_y * input_components);
+        // memset(img.input_mips[0].bytes.data(), 0, mip_pitch_x * mip_pitch_y * input_components);
+        for(int y=0; y<base_height; ++y) {
+            memcpy(img.input_mips[0].bytes.data() + y * mip_width * input_components,
+                    img.packed + y * base_width * input_components,
+                    base_width * input_components);
         }
-        mip_width  = std::max(1, mip_width  / 2);
-        mip_height = std::max(1, mip_height / 2);
-    }
-    for(int i=0; i<mip_levels; ++i) {
-        free(input_mip_pixels[i]);
-    }
-    free(input_mip_pixels);
+        stbi_image_free(img.packed);
+        img.packed = nullptr;
+        // Generate additional mips, if necessary
+        for(int mip=1; mip<mip_levels; ++mip) {
+            int src_width  = mip_width;
+            int src_height = mip_height;
+            int src_pitch_x = mip_pitch_x;
+            //int src_pitch_y = mip_pitch_y;
+            mip_width  = std::max(1, mip_width  / 2);
+            mip_height = std::max(1, mip_height / 2);
+            mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
+            mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
+            img.input_mips[mip].bytes.resize(mip_pitch_x * mip_pitch_y * input_components);
+            // memset(img.input_mips[mip].bytes.data(), 0, mip_pitch_x * mip_pitch_y * num_components);
+            //printf("mip %u: width=%d height=%d\n", i, mip_width, mip_height);
+            stbir_resize_uint8(
+                img.input_mips[mip-1].bytes.data(), src_width, src_height, src_pitch_x * input_components,
+                img.input_mips[mip].bytes.data(), mip_width, mip_height, mip_pitch_x * input_components,
+                input_components);
+        }
 
+        // Generate output mip chain
+        mip_width = base_width;
+        mip_height = base_height;
+        for(int mip=0; mip<mip_levels; ++mip) {
+            rgba_surface input_surface = {};
+            input_surface.ptr = img.input_mips[mip].bytes.data();
+            input_surface.width  = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
+            input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
+            input_surface.stride = input_surface.width * input_components;
+            printf("compressing mip %u: width=%d height=%d pitch_x=%d pitch_y=%d\n",
+                    mip, mip_width, mip_height, input_surface.width, input_surface.height);
+            
+            int num_blocks = (input_surface.width / block_dim_x)
+                * (input_surface.height / block_dim_y);
+            img.output_mip_sizes[mip] = num_blocks * bytes_per_block;
+            img.output_mips[mip].bytes.resize(img.output_mip_sizes[mip]);
+            if (      (strcmp(output_format_name, "BC1")  == 0) ||
+                    (  strcmp(output_format_name, "BC1a") == 0)) {
+                CompressBlocksBC1(&input_surface, img.output_mips[mip].bytes.data());
+            } else if (strcmp(output_format_name, "BC3") == 0) {
+                CompressBlocksBC3(&input_surface, img.output_mips[mip].bytes.data());
+            } else if (strcmp(output_format_name, "BC7") == 0) {
+                bc7_enc_settings enc_settings = {};
+                if (original_components == 3) {
+                    GetProfile_basic(&enc_settings);
+                } else if (original_components == 4) {
+                    GetProfile_alpha_basic(&enc_settings);
+                }
+                CompressBlocksBC7(&input_surface, img.output_mips[mip].bytes.data(),
+                        &enc_settings);
+            } else if (strncmp(output_format_name, "ASTC", 4) == 0) {
+                astc_enc_settings enc_settings = {};
+                if (original_components == 3) {
+                    GetProfile_astc_fast(&enc_settings,
+                            format_info->block_dim_x, format_info->block_dim_y);
+                } else if (original_components == 4) {
+                    GetProfile_astc_alpha_fast(&enc_settings,
+                            format_info->block_dim_x, format_info->block_dim_y);
+                }
+                CompressBlocksASTC(&input_surface, img.output_mips[mip].bytes.data(),
+                        &enc_settings);
+            }
+            mip_width  = std::max(1, mip_width  / 2);
+            mip_height = std::max(1, mip_height / 2);
+        }
+    }
+
+    // Output to KTX
     KtxHeader header = {};
     const uint8_t ktx_magic_id[12] = {
         0xAB, 0x4B, 0x54, 0x58,
@@ -270,7 +324,7 @@ int main(int argc, char *argv[]) {
     header.pixelWidth = base_width;
     header.pixelHeight = base_height;
     header.pixelDepth = 1;
-    header.numberOfArrayElements = 1;
+    header.numberOfArrayElements = (uint32_t)images.size();
     header.numberOfFaces = 1;
     header.numberOfMipmapLevels = mip_levels;
     header.bytesOfKeyValueData = 0;
@@ -280,23 +334,19 @@ int main(int argc, char *argv[]) {
         return 3;
     }
     fwrite(&header, 1, sizeof(KtxHeader), output_file);
-    for(int i=0; i<mip_levels; ++i) {
-        fwrite(&output_mip_sizes[i], 1, sizeof(uint32_t), output_file);
-        fwrite(output_mip_pixels[i], 1, output_mip_sizes[i], output_file);
-        uint32_t mip_padding = 3 - ((output_mip_sizes[i] + 3) % 4);
-        uint32_t zero = 0;
-        fwrite(&zero, 1, mip_padding, output_file);
+    for(const auto& img : images) {
+        for(int mip=0; mip<mip_levels; ++mip) {
+            fwrite(&img.output_mip_sizes[mip], 1, sizeof(uint32_t), output_file);
+            fwrite(img.output_mips[mip].bytes.data(), 1, img.output_mip_sizes[mip], output_file);
+            uint32_t mip_padding = 3 - ((img.output_mip_sizes[mip] + 3) % 4);
+            uint32_t zero = 0;
+            fwrite(&zero, 1, mip_padding, output_file);
+        }
+        size_t output_file_size = ftell(output_file);
+        fclose(output_file);
+        printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
+                output_format_name, mip_levels, (uint32_t)output_file_size);
     }
-    size_t output_file_size = ftell(output_file);
-    fclose(output_file);
-    printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
-            output_format_name, mip_levels, (uint32_t)output_file_size);
-
-    for(int i=0; i<mip_levels; ++i) {
-        free(output_mip_pixels[i]);
-    }
-    free(output_mip_pixels);
-    free(output_mip_sizes);
     
     return 0;
 }
