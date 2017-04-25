@@ -108,7 +108,6 @@ struct ImagePixels {
     stbi_uc* packed;  // base mip level only, tightly packed
     std::vector<MipLevel> input_mips;  // padded
     std::vector<MipLevel> output_mips;
-    std::vector<uint32_t> output_mip_sizes;
 };
 
 
@@ -227,6 +226,7 @@ int main(int argc, char *argv[]) {
             mip_h = std::max(1, mip_h / 2);
         }
     }
+    std::vector<uint32_t> output_mip_sizes(mip_levels);
 
     // Generate the input mipmap chain(s). At every level, the input
     // width and height must be padded up to a multiple of the output
@@ -238,7 +238,6 @@ int main(int argc, char *argv[]) {
     for(auto& img : images) {
         img.input_mips.resize(mip_levels);
         img.output_mips.resize(mip_levels);
-        img.output_mip_sizes.resize(mip_levels);
         // Populate padded input mip level 0
         img.input_mips[0].bytes.resize(mip_pitch_x * mip_pitch_y * input_components);
         // memset(img.input_mips[0].bytes.data(), 0, mip_pitch_x * mip_pitch_y * input_components);
@@ -282,8 +281,8 @@ int main(int argc, char *argv[]) {
             
             int num_blocks = (input_surface.width / block_dim_x)
                 * (input_surface.height / block_dim_y);
-            img.output_mip_sizes[mip] = num_blocks * bytes_per_block;
-            img.output_mips[mip].bytes.resize(img.output_mip_sizes[mip]);
+            output_mip_sizes[mip] = num_blocks * bytes_per_block;
+            img.output_mips[mip].bytes.resize(output_mip_sizes[mip]);
             if (strcmp(output_format_name, "RGBA") == 0) {
                 img.output_mips[mip] = img.input_mips[mip];
             } else if ((strcmp(output_format_name, "BC1")  == 0) ||
@@ -344,19 +343,19 @@ int main(int argc, char *argv[]) {
         return 3;
     }
     fwrite(&header, 1, sizeof(KtxHeader), output_file);
-    for(const auto& img : images) {
-        for(int mip=0; mip<mip_levels; ++mip) {
-            fwrite(&img.output_mip_sizes[mip], 1, sizeof(uint32_t), output_file);
-            fwrite(img.output_mips[mip].bytes.data(), 1, img.output_mip_sizes[mip], output_file);
-            uint32_t mip_padding = 3 - ((img.output_mip_sizes[mip] + 3) % 4);
-            uint32_t zero = 0;
-            fwrite(&zero, 1, mip_padding, output_file);
+    for(int mip=0; mip<mip_levels; ++mip) {
+        fwrite(&output_mip_sizes[mip], 1, sizeof(uint32_t), output_file);
+        for(const auto& img : images) {
+            fwrite(img.output_mips[mip].bytes.data(), 1, output_mip_sizes[mip], output_file);
         }
-        size_t output_file_size = ftell(output_file);
-        fclose(output_file);
-        printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
-                output_format_name, mip_levels, (uint32_t)output_file_size);
+        uint32_t mip_padding = 3 - ((output_mip_sizes[mip] + 3) % 4);
+        uint32_t zero = 0;
+        fwrite(&zero, 1, mip_padding, output_file);
     }
+    size_t output_file_size = ftell(output_file);
+    fclose(output_file);
+    printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
+            output_format_name, mip_levels, (uint32_t)output_file_size);
     
     return 0;
 }
