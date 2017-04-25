@@ -136,6 +136,7 @@ void PrintUsage(char *argv[]) {
     fprintf(stderr, "  -m            Enable mipmap generation\n");
     fprintf(stderr, "  -c            Enable cubemap output. Each set of six input images will be\n");
     fprintf(stderr, "                treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.\n");
+    fprintf(stderr, "  -q            Enable quiet mode (suppress non-error console output)\n");
     fprintf(stderr, "  -h            Displays this help message\n");
     fprintf(stderr, "formats:\n  ");
     for(int i=0; i<g_format_count; ++i) {
@@ -144,12 +145,15 @@ void PrintUsage(char *argv[]) {
     fprintf(stderr, "\n");
 }
 
+#define qprintf(msg, ...) if (!quiet_mode) { printf( (msg), __VA_ARGS__); }
+
 int main(int argc, char *argv[]) {
     std::vector<char*> input_filenames;
     const char *output_filename = nullptr;
     const char *output_format_name = nullptr;
     bool generate_mipmaps = false;
     bool output_as_cubemap = false;
+    bool quiet_mode = false;
     for(int a = 1; a < argc; ++a) {
         if (strncmp("-o", argv[a], 3) == 0 && a+1 < argc) {
             output_filename = argv[++a];
@@ -159,6 +163,8 @@ int main(int argc, char *argv[]) {
             generate_mipmaps = true;
         } else if (strncmp("-c", argv[a], 3) == 0) {
             output_as_cubemap = true;
+        } else if (strncmp("-q", argv[a], 3) == 0) {
+            quiet_mode = true;
         } else if (strncmp("-h", argv[a], 3) == 0) {
             PrintUsage(argv);
             return 0;
@@ -204,7 +210,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error loading input '%s'\n", input_filenames[0]);
         return 2;
     }
-    printf("Loaded %s -- width=%d height=%d comp=%d\n",
+    qprintf("Loaded %s -- width=%d height=%d comp=%d\n",
             input_filenames[0], base_width, base_height,
             original_components);
     // Subsequent files must match dimensions of the first
@@ -221,7 +227,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "  %s: %d x %d\n", input_filenames[i], bw, bh);
             return 3;
         }
-        printf("Loaded %s -- width=%d height=%d comp=%d\n",
+        qprintf("Loaded %s -- width=%d height=%d comp=%d\n",
                 input_filenames[i], bw, bh, oc);
     }
     // Determine mip chain properties
@@ -286,7 +292,7 @@ int main(int argc, char *argv[]) {
             input_surface.width  = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
             input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
             input_surface.stride = input_surface.width * input_components;
-            printf("compressing mip %u layer %d: width=%d height=%d pitch_x=%d pitch_y=%d\n",
+            qprintf("compressing mip %u layer %d: width=%d height=%d pitch_x=%d pitch_y=%d\n",
                     mip, layer, mip_width, mip_height, input_surface.width, input_surface.height);
             
             int num_blocks = (input_surface.width / block_dim_x)
@@ -379,7 +385,7 @@ int main(int argc, char *argv[]) {
     }
     size_t output_file_size = ftell(output_file);
     fclose(output_file);
-    printf("Wrote %s (format=%s, mips=%u, layers=%u, faces=%u, size=%u)\n", output_filename,
+    qprintf("Wrote %s (format=%s, mips=%u, layers=%u, faces=%u, size=%u)\n", output_filename,
             output_format_name, mip_levels, real_array_element_count, header.numberOfFaces,
             (uint32_t)output_file_size);
     
