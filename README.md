@@ -22,6 +22,8 @@ It writes the compressed images to a [KTX](https://www.khronos.org/opengles/sdk/
 If more than one image is provided with identical dimensions, the output KTX file can be either a
 2D texture array or a cubemap.
 
+Download pre-built Windows binaries from the [Releases](https://github.com/cdwfs/img2ktx/releases) page.
+
 That's it!
 
 It may eventually do the following things as well:
