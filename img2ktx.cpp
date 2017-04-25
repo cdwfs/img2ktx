@@ -131,10 +131,12 @@ struct KtxHeader {
 void PrintUsage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] [input]\n", argv[0]);
     fprintf(stderr, "options:\n");
-    fprintf(stderr, "  -o [out.ktx]      Output file [required]\n");
-    fprintf(stderr, "  -f [format]       Output format [required]\n");
-    fprintf(stderr, "  -m                Enable mipmap generation\n");
-    fprintf(stderr, "  -h                Displays this help message\n");
+    fprintf(stderr, "  -o [out.ktx]  Output file [required]\n");
+    fprintf(stderr, "  -f [format]   Output format [required]\n");
+    fprintf(stderr, "  -m            Enable mipmap generation\n");
+    fprintf(stderr, "  -c            Enable cubemap output. Each set of six input images will be\n");
+    fprintf(stderr, "                treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.\n");
+    fprintf(stderr, "  -h            Displays this help message\n");
     fprintf(stderr, "formats:\n  ");
     for(int i=0; i<g_format_count; ++i) {
         fprintf(stderr, "%s ", g_formats[i].name);
@@ -147,6 +149,7 @@ int main(int argc, char *argv[]) {
     const char *output_filename = nullptr;
     const char *output_format_name = nullptr;
     bool generate_mipmaps = false;
+    bool output_as_cubemap = false;
     for(int a = 1; a < argc; ++a) {
         if (strncmp("-o", argv[a], 3) == 0 && a+1 < argc) {
             output_filename = argv[++a];
@@ -154,6 +157,8 @@ int main(int argc, char *argv[]) {
             output_format_name = argv[++a];
         } else if (strncmp("-m", argv[a], 3) == 0) {
             generate_mipmaps = true;
+        } else if (strncmp("-c", argv[a], 3) == 0) {
+            output_as_cubemap = true;
         } else if (strncmp("-h", argv[a], 3) == 0) {
             PrintUsage(argv);
             return 0;
@@ -167,7 +172,10 @@ int main(int argc, char *argv[]) {
         PrintUsage(argv);
         return -1;
     }
-    assert(input_filenames.size() == 1); // TODO(cort): !!!
+    if (output_as_cubemap && (input_filenames.size() % 6) != 0) {
+        fprintf(stderr, "Error: when generating cubemaps, six images are required per cube.\n");
+        return -1;
+    }
 
     // Look up the output format info
     const GlFormatInfo *format_info = NULL;
@@ -231,11 +239,13 @@ int main(int argc, char *argv[]) {
     // Generate the input mipmap chain(s). At every level, the input
     // width and height must be padded up to a multiple of the output
     // block dimensions.
-    int mip_width  = base_width;
-    int mip_height = base_height;
-    int mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
-    int mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
-    for(auto& img : images) {
+    for(int layer = 0; layer < (int)images.size(); ++layer) {
+        int mip_width  = base_width;
+        int mip_height = base_height;
+        int mip_pitch_x = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
+        int mip_pitch_y = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
+        
+        auto& img = images[layer];
         img.input_mips.resize(mip_levels);
         img.output_mips.resize(mip_levels);
         // Populate padded input mip level 0
@@ -276,8 +286,8 @@ int main(int argc, char *argv[]) {
             input_surface.width  = ((mip_width  + block_dim_x - 1) / block_dim_x) * block_dim_x;
             input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
             input_surface.stride = input_surface.width * input_components;
-            printf("compressing mip %u: width=%d height=%d pitch_x=%d pitch_y=%d\n",
-                    mip, mip_width, mip_height, input_surface.width, input_surface.height);
+            printf("compressing mip %u layer %d: width=%d height=%d pitch_x=%d pitch_y=%d\n",
+                    mip, layer, mip_width, mip_height, input_surface.width, input_surface.height);
             
             int num_blocks = (input_surface.width / block_dim_x)
                 * (input_surface.height / block_dim_y);
@@ -332,9 +342,11 @@ int main(int argc, char *argv[]) {
     header.glBaseInternalFormat = format_info->base_format;
     header.pixelWidth = base_width;
     header.pixelHeight = base_height;
-    header.pixelDepth = 1;
-    header.numberOfArrayElements = (uint32_t)images.size();
-    header.numberOfFaces = 1;
+    header.pixelDepth = 0; // must be 0 for 2D/cubemap textures
+    uint32_t real_array_element_count = (uint32_t)(images.size() / (output_as_cubemap ? 6 : 1));
+    // KTX spec says this field must be 0 for non-array textures
+    header.numberOfArrayElements = (real_array_element_count > 1) ? real_array_element_count : 0;
+    header.numberOfFaces = output_as_cubemap ? 6 : 1;
     header.numberOfMipmapLevels = mip_levels;
     header.bytesOfKeyValueData = 0;
     FILE *output_file = fopen(output_filename, "wb");
@@ -343,19 +355,33 @@ int main(int argc, char *argv[]) {
         return 3;
     }
     fwrite(&header, 1, sizeof(KtxHeader), output_file);
+    uint32_t zero = 0;
     for(int mip=0; mip<mip_levels; ++mip) {
-        fwrite(&output_mip_sizes[mip], 1, sizeof(uint32_t), output_file);
-        for(const auto& img : images) {
-            fwrite(img.output_mips[mip].bytes.data(), 1, output_mip_sizes[mip], output_file);
+        uint32_t image_size = (output_as_cubemap && header.numberOfArrayElements == 0)
+            ? output_mip_sizes[mip]  // non-array cubemaps store the unpadded size of one face
+            : output_mip_sizes[mip] * real_array_element_count;  // all others store the size of all elems/faces/slices for the whole mip
+        //printf("mip=%u offset=%u image_size=%u\n", mip, (uint32_t)ftell(output_file), image_size);
+        fwrite(&image_size, 1, sizeof(uint32_t), output_file);
+        for(uint32_t array_elem = 0; array_elem < real_array_element_count; ++array_elem) {
+            for(uint32_t face = 0; face < header.numberOfFaces; ++face) {
+                const auto& img = images[array_elem * header.numberOfFaces + face];
+                //printf("mip=%u array=%u face=%u offset=%u size=%u\n", mip, array_elem, face,
+                //        (uint32_t)ftell(output_file), output_mip_sizes[mip]);
+                fwrite(img.output_mips[mip].bytes.data(), 1, output_mip_sizes[mip], output_file);
+                if (output_as_cubemap && header.numberOfArrayElements == 0) {
+                    uint32_t cube_padding = (4 - (ftell(output_file) % 4)) % 4;
+                    fwrite(&zero, 1, cube_padding, output_file);
+                }
+            }
         }
-        uint32_t mip_padding = 3 - ((output_mip_sizes[mip] + 3) % 4);
-        uint32_t zero = 0;
+        uint32_t mip_padding = (4 - (ftell(output_file) % 4)) % 4;
         fwrite(&zero, 1, mip_padding, output_file);
     }
     size_t output_file_size = ftell(output_file);
     fclose(output_file);
-    printf("Wrote %s (format=%s, mips=%u, size=%u)\n", output_filename,
-            output_format_name, mip_levels, (uint32_t)output_file_size);
+    printf("Wrote %s (format=%s, mips=%u, layers=%u, faces=%u, size=%u)\n", output_filename,
+            output_format_name, mip_levels, real_array_element_count, header.numberOfFaces,
+            (uint32_t)output_file_size);
     
     return 0;
 }
