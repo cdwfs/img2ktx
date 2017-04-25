@@ -10,7 +10,8 @@ It currently runs on Windows and Linux, but that's mostly because those are the 
 I've built ispc_texcomp successfully. Only the Windows ispc_texcomp library is included in
 the repo; Linux users must build their own.
 
-It loads images with [stb_image](http://github.com/nothings/stb).
+It loads images with [stb_image](http://github.com/nothings/stb). Supported formats include
+JPEG, PNG, BMP, TGA, GIF, etc.
 
 It optionally generates mipmap chains with [stb_image_resize](http://github.com/nothings/stb).
 
