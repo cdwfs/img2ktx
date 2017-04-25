@@ -34,7 +34,11 @@ enum {
     GL_RGB                           = 0x1907,
     GL_RGBA                          = 0x1908,
 
+    // For glType
+    GL_UNSIGNED_BYTE                 = 0x1401,
+    
     // For glInternalFormat
+    GL_RGBA8                                  = 0x8058,
     GL_COMPRESSED_RGB_S3TC_DXT1_EXT           = 0x83F0, // BC1 (no alpha)
     GL_COMPRESSED_RGBA_S3TC_DXT1_EXT          = 0x83F1, // BC1 (alpha)
     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT          = 0x83F3, // BC3
@@ -73,23 +77,27 @@ struct GlFormatInfo {
     const char *name;
     uint32_t internal_format;
     uint32_t base_format;
+    uint32_t gl_format;     // channel count, effectively (RGB, RGBA, etc). For compressed formats, format=0.
+    uint32_t gl_type;       // type of each channel. For compressed formats, type=0.
+    uint32_t gl_type_size;  // size in bytes of gl_type for endianness conversion. for compressed types, size=1.
     uint32_t block_dim_x;
     uint32_t block_dim_y;
     uint32_t block_bytes;
 };
 const GlFormatInfo g_formats[] = {
-    { "BC1",     GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   GL_RGB,   4, 4,  8 },
-    { "BC1a",    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  GL_RGBA,  4, 4, 16 },
-    { "BC3",     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  GL_RGBA,  4, 4, 16 },
-    { "BC7",     GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, GL_RGBA,  4, 4, 16 },
-    { "ASTC4x4", GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   GL_RGBA,  4, 4, 16 },
-    { "ASTC5x4", GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   GL_RGBA,  5, 4, 16 },
-    { "ASTC5x5", GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   GL_RGBA,  5, 5, 16 },
-    { "ASTC6x5", GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   GL_RGBA,  6, 5, 16 },
-    { "ASTC6x6", GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   GL_RGBA,  6, 6, 16 },
-    { "ASTC8x5", GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   GL_RGBA,  8, 5, 16 },
-    { "ASTC8x6", GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   GL_RGBA,  8, 6, 16 },
-    { "ASTC8x8", GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   GL_RGBA,  8, 8, 16 },
+    { "RGBA",    GL_RGBA8,                          GL_RGBA,  GL_RGBA, GL_UNSIGNED_BYTE, 1, 1, 1,  4 },
+    { "BC1",     GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   GL_RGB,   0,       0,                1, 4, 4,  8 },
+    { "BC1a",    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  GL_RGBA,  0,       0,                1, 4, 4, 16 },
+    { "BC3",     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  GL_RGBA,  0,       0,                1, 4, 4, 16 },
+    { "BC7",     GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, GL_RGBA,  0,       0,                1, 4, 4, 16 },
+    { "ASTC4x4", GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   GL_RGBA,  0,       0,                1, 4, 4, 16 },
+    { "ASTC5x4", GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   GL_RGBA,  0,       0,                1, 5, 4, 16 },
+    { "ASTC5x5", GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   GL_RGBA,  0,       0,                1, 5, 5, 16 },
+    { "ASTC6x5", GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   GL_RGBA,  0,       0,                1, 6, 5, 16 },
+    { "ASTC6x6", GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   GL_RGBA,  0,       0,                1, 6, 6, 16 },
+    { "ASTC8x5", GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   GL_RGBA,  0,       0,                1, 8, 5, 16 },
+    { "ASTC8x6", GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   GL_RGBA,  0,       0,                1, 8, 6, 16 },
+    { "ASTC8x8", GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   GL_RGBA,  0,       0,                1, 8, 8, 16 },
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
 
@@ -276,8 +284,10 @@ int main(int argc, char *argv[]) {
                 * (input_surface.height / block_dim_y);
             img.output_mip_sizes[mip] = num_blocks * bytes_per_block;
             img.output_mips[mip].bytes.resize(img.output_mip_sizes[mip]);
-            if (      (strcmp(output_format_name, "BC1")  == 0) ||
-                    (  strcmp(output_format_name, "BC1a") == 0)) {
+            if (strcmp(output_format_name, "RGBA") == 0) {
+                img.output_mips[mip] = img.input_mips[mip];
+            } else if ((strcmp(output_format_name, "BC1")  == 0) ||
+                    (   strcmp(output_format_name, "BC1a") == 0)) {
                 CompressBlocksBC1(&input_surface, img.output_mips[mip].bytes.data());
             } else if (strcmp(output_format_name, "BC3") == 0) {
                 CompressBlocksBC3(&input_surface, img.output_mips[mip].bytes.data());
@@ -316,9 +326,9 @@ int main(int argc, char *argv[]) {
     };
     memcpy(header.identifier, ktx_magic_id, 12);
     header.endianness = 0x04030201;
-    header.glType = 0;
-    header.glTypeSize = 1;
-    header.glFormat = 0;
+    header.glType = format_info->gl_type;
+    header.glTypeSize = format_info->gl_type_size;
+    header.glFormat = format_info->gl_format;
     header.glInternalFormat = format_info->internal_format;
     header.glBaseInternalFormat = format_info->base_format;
     header.pixelWidth = base_width;
