@@ -3,6 +3,10 @@
  * To build in Linux:
  *   cc -L. -o img2ktx img2ktx.cpp -lispc_texcomp -lm
  *
+ * To build in MacOS:
+ *   clang++ -std=c++11 -L. -o img2ktx img2ktx.cpp -lispc_texcomp -lm
+ *   When building ispc_texcomp: you may want @executable_path/$(EXECUTABLE_PATH) instead of the default
+ *
  * To build with Visual Studio 2013:
  *   "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat"
  *   cl -W4 -MT -nologo -EHsc -wd4996 /Feimg2ktx.exe img2ktx.cpp /link -incremental:no -opt:ref ispc_texcomp.lib
