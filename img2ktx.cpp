@@ -213,6 +213,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error loading input '%s'\n", input_filenames[0]);
         return 2;
     }
+    if (output_as_cubemap && base_width != base_height) {
+        fprintf(stderr, "Error: when generating cubemaps, input width/height must be equal.\n");
+        fprintf(stderr, "  %s: %d x %d\n", input_filenames[0], base_width, base_height);
+        return 4;
+    }
     qprintf("Loaded %s -- width=%d height=%d comp=%d\n",
             input_filenames[0], base_width, base_height,
             original_components);
