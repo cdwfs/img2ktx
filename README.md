@@ -6,9 +6,9 @@ img2ktx is a simple command-line utility.
 It is so simple, it doesn't even have a project file. Look at the top of the source file for
 build instructions. (The .sln file is for debugging only)
 
-It currently runs on Windows and Linux, but that's mostly because those are the only places
-I've built ispc_texcomp successfully. Only the Windows ispc_texcomp library is included in
-the repo; Linux users must build their own.
+It currently runs on Windows, Linux and MacOS. 
+Only the Windows ispc_texcomp library is included in
+the repo; Linux and MacOS users must build their own.
 
 It loads images with [stb_image](http://github.com/nothings/stb). Supported formats include
 JPEG, PNG, BMP, TGA, GIF, etc.
