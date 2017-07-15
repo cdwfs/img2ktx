@@ -21,6 +21,9 @@
 
 #pragma warning(disable:4702)  // unreachable code
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
+#define STBI_MALLOC(sz) malloc(sz)
+#define STBI_REALLOC(p,newsz) realloc(p,newsz)
+#define STBI_FREE(p) free(p)
 #include "stb_image_resize.h"
 #pragma warning(pop)
 
@@ -134,13 +137,15 @@ struct KtxHeader {
 void PrintUsage(char *argv[]) {
     fprintf(stderr, "Usage: %s [options] [input]\n", argv[0]);
     fprintf(stderr, "options:\n");
-    fprintf(stderr, "  -o [out.ktx]  Output file [required]\n");
-    fprintf(stderr, "  -f [format]   Output format [required]\n");
-    fprintf(stderr, "  -m            Enable mipmap generation\n");
-    fprintf(stderr, "  -c            Enable cubemap output. Each set of six input images will be\n");
-    fprintf(stderr, "                treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.\n");
-    fprintf(stderr, "  -q            Enable quiet mode (suppress non-error console output)\n");
-    fprintf(stderr, "  -h            Displays this help message\n");
+    fprintf(stderr, "  -o [out.ktx]      Output file [required]\n");
+    fprintf(stderr, "  -f [format]       Output format [required]\n");
+    fprintf(stderr, "  -r [width height] Resize input to width x height before conversion.\n");
+    fprintf(stderr, "                    Provided dimensions must both be >= 1.\n");
+    fprintf(stderr, "  -m                Enable mipmap generation\n");
+    fprintf(stderr, "  -c                Enable cubemap output. Each set of six input images will be\n");
+    fprintf(stderr, "                    treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.\n");
+    fprintf(stderr, "  -q                Enable quiet mode (suppress non-error console output)\n");
+    fprintf(stderr, "  -h                Displays this help message\n");
     fprintf(stderr, "formats:\n  ");
     for(int i=0; i<g_format_count; ++i) {
         fprintf(stderr, "%s ", g_formats[i].name);
@@ -157,18 +162,24 @@ int main(int argc, char *argv[]) {
     bool generate_mipmaps = false;
     bool output_as_cubemap = false;
     bool quiet_mode = false;
+    bool base_resize_enable = false;
+    int base_resize_width = 0, base_resize_height = 0;
     for(int a = 1; a < argc; ++a) {
-        if (strncmp("-o", argv[a], 3) == 0 && a+1 < argc) {
+        if (strcmp("-o", argv[a]) == 0 && a+1 < argc) {
             output_filename = argv[++a];
-        } else if (strncmp("-f", argv[a], 3) == 0 && a+1 < argc) {
+        } else if (strcmp("-f", argv[a]) == 0 && a+1 < argc) {
             output_format_name = argv[++a];
-        } else if (strncmp("-m", argv[a], 3) == 0) {
+        } else if (strcmp("-r", argv[a]) == 0 && a+2 < argc) {
+            base_resize_enable = true;
+            base_resize_width = (int)strtol(argv[++a], nullptr, 10);
+            base_resize_height = (int)strtol(argv[++a], nullptr, 10);
+        } else if (strcmp("-m", argv[a]) == 0) {
             generate_mipmaps = true;
-        } else if (strncmp("-c", argv[a], 3) == 0) {
+        } else if (strcmp("-c", argv[a]) == 0) {
             output_as_cubemap = true;
-        } else if (strncmp("-q", argv[a], 3) == 0) {
+        } else if (strcmp("-q", argv[a]) == 0) {
             quiet_mode = true;
-        } else if (strncmp("-h", argv[a], 3) == 0) {
+        } else if (strcmp("-h", argv[a]) == 0) {
             PrintUsage(argv);
             return 0;
         } else {
@@ -183,6 +194,11 @@ int main(int argc, char *argv[]) {
     }
     if (output_as_cubemap && (input_filenames.size() % 6) != 0) {
         fprintf(stderr, "Error: when generating cubemaps, six images are required per cube.\n");
+        return -1;
+    }
+    if (base_resize_enable && (base_resize_width < 1 || base_resize_height < 1)) {
+        fprintf(stderr, "Error: resize width (%d) and height (%d) must both be >= 1.\n",
+                base_resize_width, base_resize_height);
         return -1;
     }
 
@@ -238,6 +254,24 @@ int main(int argc, char *argv[]) {
         qprintf("Loaded %s -- width=%d height=%d comp=%d\n",
                 input_filenames[i], bw, bh, oc);
     }
+    // Optionally, resize the input images
+    if (base_resize_enable) {
+        for(int layer = 0; layer < (int)images.size(); ++layer) {
+            auto& img = images[layer];
+            stbi_uc* resized_packed = (stbi_uc*)STBI_MALLOC(base_resize_width * base_resize_height * input_components);
+            stbir_resize_uint8(
+                img.packed, base_width, base_height, base_width * input_components,
+                resized_packed, base_resize_width, base_resize_height, base_resize_width * input_components,
+                input_components);
+            stbi_image_free(img.packed);
+            img.packed = resized_packed;
+        }
+        qprintf("Resized inputs (old: width=%d height=%d, new: width=%d height=%d\n",
+                base_width, base_height, base_resize_width, base_resize_height);
+        base_width = base_resize_width;
+        base_height = base_resize_height;
+    }
+
     // Determine mip chain properties
     int mip_levels = 1;
     if (generate_mipmaps) {
@@ -270,7 +304,12 @@ int main(int argc, char *argv[]) {
                     img.packed + y * base_width * input_components,
                     base_width * input_components);
         }
-        stbi_image_free(img.packed);
+        // Technically STBI_FREE() should suffice in both cases, but just to be safe...
+        if (base_resize_enable) {
+            STBI_FREE(img.packed);
+        } else {
+            stbi_image_free(img.packed);
+        }
         img.packed = nullptr;
         // Generate additional mips, if necessary
         for(int mip=1; mip<mip_levels; ++mip) {
