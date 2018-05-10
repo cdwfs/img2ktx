@@ -35,48 +35,48 @@
 
 enum {
     // For glFormat
-    GL_RED                           = 0x1903,
-    GL_RG                            = 0x8227,
-    GL_RGB                           = 0x1907,
-    GL_RGBA                          = 0x1908,
+    IMG2KTX_GL_RED                           = 0x1903,
+    IMG2KTX_GL_RG                            = 0x8227,
+    IMG2KTX_GL_RGB                           = 0x1907,
+    IMG2KTX_GL_RGBA                          = 0x1908,
 
     // For glType
-    GL_UNSIGNED_BYTE                 = 0x1401,
+    IMG2KTX_GL_UNSIGNED_BYTE                 = 0x1401,
     
     // For glInternalFormat
-    GL_RGBA8                                  = 0x8058,
-    GL_COMPRESSED_RGB_S3TC_DXT1_EXT           = 0x83F0, // BC1 (no alpha)
-    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT          = 0x83F1, // BC1 (alpha)
-    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT          = 0x83F3, // BC3
-    GL_COMPRESSED_RGBA_BPTC_UNORM_ARB         = 0x8E8C, // BC7
-    GL_COMPRESSED_RGBA_ASTC_4x4_KHR           = 0x93B0,
-    GL_COMPRESSED_RGBA_ASTC_5x4_KHR           = 0x93B1,
-    GL_COMPRESSED_RGBA_ASTC_5x5_KHR           = 0x93B2,
-    GL_COMPRESSED_RGBA_ASTC_6x5_KHR           = 0x93B3,
-    GL_COMPRESSED_RGBA_ASTC_6x6_KHR           = 0x93B4,
-    GL_COMPRESSED_RGBA_ASTC_8x5_KHR           = 0x93B5,
-    GL_COMPRESSED_RGBA_ASTC_8x6_KHR           = 0x93B6,
-    GL_COMPRESSED_RGBA_ASTC_8x8_KHR           = 0x93B7,
-    GL_COMPRESSED_RGBA_ASTC_10x5_KHR          = 0x93B8,
-    GL_COMPRESSED_RGBA_ASTC_10x6_KHR          = 0x93B9,
-    GL_COMPRESSED_RGBA_ASTC_10x8_KHR          = 0x93BA,
-    GL_COMPRESSED_RGBA_ASTC_10x10_KHR         = 0x93BB,
-    GL_COMPRESSED_RGBA_ASTC_12x10_KHR         = 0x93BC,
-    GL_COMPRESSED_RGBA_ASTC_12x12_KHR         = 0x93BD,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR   = 0x93D0,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR   = 0x93D1,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR   = 0x93D2,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR   = 0x93D3,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR   = 0x93D4,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR   = 0x93D5,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR   = 0x93D6,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR   = 0x93D7,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR  = 0x93D8,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR  = 0x93D9,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR  = 0x93DA,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC,
-    GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD,
+    IMG2KTX_GL_RGBA8                                  = 0x8058,
+    IMG2KTX_GL_COMPRESSED_RGB_S3TC_DXT1_EXT           = 0x83F0, // BC1 (no alpha)
+    IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT          = 0x83F1, // BC1 (alpha)
+    IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT          = 0x83F3, // BC3
+    IMG2KTX_GL_COMPRESSED_RGBA_BPTC_UNORM_ARB         = 0x8E8C, // BC7
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_4x4_KHR           = 0x93B0,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x4_KHR           = 0x93B1,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x5_KHR           = 0x93B2,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x5_KHR           = 0x93B3,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x6_KHR           = 0x93B4,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x5_KHR           = 0x93B5,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x6_KHR           = 0x93B6,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x8_KHR           = 0x93B7,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x5_KHR          = 0x93B8,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x6_KHR          = 0x93B9,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x8_KHR          = 0x93BA,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x10_KHR         = 0x93BB,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_12x10_KHR         = 0x93BC,
+    IMG2KTX_GL_COMPRESSED_RGBA_ASTC_12x12_KHR         = 0x93BD,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR   = 0x93D0,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR   = 0x93D1,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR   = 0x93D2,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR   = 0x93D3,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR   = 0x93D4,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR   = 0x93D5,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR   = 0x93D6,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR   = 0x93D7,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR  = 0x93D8,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR  = 0x93D9,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR  = 0x93DA,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC,
+    IMG2KTX_GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD,
 };
 
 struct GlFormatInfo {
@@ -91,19 +91,19 @@ struct GlFormatInfo {
     uint32_t block_bytes;
 };
 const GlFormatInfo g_formats[] = {
-    { "RGBA",    GL_RGBA8,                          GL_RGBA,  GL_RGBA, GL_UNSIGNED_BYTE, 1, 1, 1,  4 },
-    { "BC1",     GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   GL_RGB,   0,       0,                1, 4, 4,  8 },
-    { "BC1a",    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  GL_RGBA,  0,       0,                1, 4, 4, 16 },
-    { "BC3",     GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  GL_RGBA,  0,       0,                1, 4, 4, 16 },
-    { "BC7",     GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, GL_RGBA,  0,       0,                1, 4, 4, 16 },
-    { "ASTC4x4", GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   GL_RGBA,  0,       0,                1, 4, 4, 16 },
-    { "ASTC5x4", GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   GL_RGBA,  0,       0,                1, 5, 4, 16 },
-    { "ASTC5x5", GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   GL_RGBA,  0,       0,                1, 5, 5, 16 },
-    { "ASTC6x5", GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   GL_RGBA,  0,       0,                1, 6, 5, 16 },
-    { "ASTC6x6", GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   GL_RGBA,  0,       0,                1, 6, 6, 16 },
-    { "ASTC8x5", GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   GL_RGBA,  0,       0,                1, 8, 5, 16 },
-    { "ASTC8x6", GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   GL_RGBA,  0,       0,                1, 8, 6, 16 },
-    { "ASTC8x8", GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   GL_RGBA,  0,       0,                1, 8, 8, 16 },
+    { "RGBA",    IMG2KTX_GL_RGBA8,                          IMG2KTX_GL_RGBA,  IMG2KTX_GL_RGBA, IMG2KTX_GL_UNSIGNED_BYTE, 1, 1, 1,  4 },
+    { "BC1",     IMG2KTX_GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   IMG2KTX_GL_RGB,   0,               0,                        1, 4, 4,  8 },
+    { "BC1a",    IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
+    { "BC3",     IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
+    { "BC7",     IMG2KTX_GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
+    { "ASTC4x4", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
+    { "ASTC5x4", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 5, 4, 16 },
+    { "ASTC5x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 5, 5, 16 },
+    { "ASTC6x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 6, 5, 16 },
+    { "ASTC6x6", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 6, 6, 16 },
+    { "ASTC8x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 5, 16 },
+    { "ASTC8x6", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 6, 16 },
+    { "ASTC8x8", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 8, 16 },
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
 
