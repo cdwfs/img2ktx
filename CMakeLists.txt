@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(img2ktx)
 
+add_subdirectory(third_party)
+
 ADD_EXECUTABLE(img2ktx ${CMAKE_CURRENT_SOURCE_DIR}/img2ktx.cpp)
 
 IF(${MSVC})
