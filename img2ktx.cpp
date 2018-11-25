@@ -1,4 +1,4 @@
-#include "ispc_texcomp.h"
+#include <Compressonator.h>
 
 #pragma warning(push, 3)
 #define STB_IMAGE_IMPLEMENTATION
@@ -63,8 +63,9 @@ enum {
     // clang-format on
 };
 
-struct GlFormatInfo {
+struct CompressedFormatInfo {
     const char *name;
+    CMP_FORMAT cmp_format;
     uint32_t internal_format;
     uint32_t base_format;
     uint32_t gl_format;  // channel count, effectively (RGB, RGBA, etc). For compressed formats, format=0.
@@ -74,21 +75,27 @@ struct GlFormatInfo {
     uint32_t block_dim_y;
     uint32_t block_bytes;
 };
-const GlFormatInfo g_formats[] = {
+const CompressedFormatInfo g_formats[] = {
         // clang-format off
-    { "RGBA",    IMG2KTX_GL_RGBA8,                          IMG2KTX_GL_RGBA,  IMG2KTX_GL_RGBA, IMG2KTX_GL_UNSIGNED_BYTE, 1, 1, 1,  4 },
-    { "BC1",     IMG2KTX_GL_COMPRESSED_RGB_S3TC_DXT1_EXT,   IMG2KTX_GL_RGB,   0,               0,                        1, 4, 4,  8 },
-    { "BC1a",    IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,  IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
-    { "BC3",     IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,  IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
-    { "BC7",     IMG2KTX_GL_COMPRESSED_RGBA_BPTC_UNORM_ARB, IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
-    { "ASTC4x4", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_4x4_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 4, 4, 16 },
-    { "ASTC5x4", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x4_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 5, 4, 16 },
-    { "ASTC5x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 5, 5, 16 },
-    { "ASTC6x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 6, 5, 16 },
-    { "ASTC6x6", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x6_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 6, 6, 16 },
-    { "ASTC8x5", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x5_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 5, 16 },
-    { "ASTC8x6", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x6_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 6, 16 },
-    { "ASTC8x8", IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x8_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 8, 8, 16 },
+    { "RGBA",      CMP_FORMAT_RGBA_8888, IMG2KTX_GL_RGBA8,                            IMG2KTX_GL_RGBA,  IMG2KTX_GL_RGBA, IMG2KTX_GL_UNSIGNED_BYTE, 1,  1,  1,  4 },
+    { "BC1",       CMP_FORMAT_BC1,       IMG2KTX_GL_COMPRESSED_RGB_S3TC_DXT1_EXT,     IMG2KTX_GL_RGB,   0,               0,                        1,  4,  4,  8 },
+    { "BC1a",      CMP_FORMAT_BC1,       IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,    IMG2KTX_GL_RGBA,  0,               0,                        1,  4,  4, 16 },
+    { "BC3",       CMP_FORMAT_BC3,       IMG2KTX_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,    IMG2KTX_GL_RGBA,  0,               0,                        1,  4,  4, 16 },
+    { "BC7",       CMP_FORMAT_BC7,       IMG2KTX_GL_COMPRESSED_RGBA_BPTC_UNORM_ARB,   IMG2KTX_GL_RGBA,  0,               0,                        1,  4,  4, 16 },
+    { "ASTC4x4",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_4x4_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  4,  4, 16 },
+    { "ASTC5x4",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x4_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  5,  4, 16 },
+    { "ASTC5x5",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_5x5_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  5,  5, 16 },
+    { "ASTC6x5",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x5_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  6,  5, 16 },
+    { "ASTC6x6",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_6x6_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  6,  6, 16 },
+    { "ASTC8x5",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x5_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  8,  5, 16 },
+    { "ASTC8x6",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x6_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  8,  6, 16 },
+    { "ASTC8x8",   CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_8x8_KHR,     IMG2KTX_GL_RGBA,  0,               0,                        1,  8,  8, 16 },
+    { "ASTC10x5",  CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x5_KHR,    IMG2KTX_GL_RGBA,  0,               0,                        1, 10,  5, 16 },
+    { "ASTC10x6",  CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x6_KHR,    IMG2KTX_GL_RGBA,  0,               0,                        1, 10,  6, 16 },
+    { "ASTC10x8",  CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x8_KHR,    IMG2KTX_GL_RGBA,  0,               0,                        1, 10,  8, 16 },
+    { "ASTC10x10", CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_10x10_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 10, 10, 16 },
+    { "ASTC12x10", CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_12x10_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 12, 10, 16 },
+    { "ASTC12x12", CMP_FORMAT_ASTC,      IMG2KTX_GL_COMPRESSED_RGBA_ASTC_12x12_KHR,   IMG2KTX_GL_RGBA,  0,               0,                        1, 12, 12, 16 },
         // clang-format on
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
@@ -191,7 +198,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Look up the output format info
-    const GlFormatInfo *format_info = NULL;
+    const CompressedFormatInfo *format_info = NULL;
     for (int f = 0; f < g_format_count; ++f) {
         if (strcmp(g_formats[f].name, output_format_name) == 0) {
             format_info = g_formats + f;
@@ -205,10 +212,11 @@ int main(int argc, char *argv[]) {
     const int bytes_per_block = format_info->block_bytes;
     const int block_dim_x = format_info->block_dim_x;
     const int block_dim_y = format_info->block_dim_y;
+    const int block_dim_z = 1;
 
     // Load the input file(s)
     int base_width = 0, base_height = 0;
-    int input_components = 4;  // ispc_texcomp requires 32-bit RGBA input
+    int input_components = 4;  // force all input to 32-bit RGBA
     int original_components = 0;
     std::vector<ImagePixels> images(input_filenames.size());
     images[0].packed = stbi_load(input_filenames[0], &base_width, &base_height, &original_components, input_components);
@@ -267,6 +275,14 @@ int main(int argc, char *argv[]) {
     }
     std::vector<uint32_t> output_mip_sizes(mip_levels);
 
+    CMP_CompressOptions options = {};
+    options.dwSize = sizeof(CMP_CompressOptions);
+    options.fquality = 0.05f;
+    options.dwnumThreads = 8;
+    if (std::string(format_info->name) == "BC1a") {
+      options.bDXT1UseAlpha = 1;
+    }
+
     // Generate the input mipmap chain(s). At every level, the input
     // width and height must be padded up to a multiple of the output
     // block dimensions.
@@ -315,40 +331,41 @@ int main(int argc, char *argv[]) {
         mip_width = base_width;
         mip_height = base_height;
         for (int mip = 0; mip < mip_levels; ++mip) {
-            rgba_surface input_surface = {};
-            input_surface.ptr = img.input_mips[mip].bytes.data();
-            input_surface.width = ((mip_width + block_dim_x - 1) / block_dim_x) * block_dim_x;
-            input_surface.height = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
-            input_surface.stride = input_surface.width * input_components;
+            CMP_Texture src_texture = {};
+            src_texture.dwSize = sizeof(CMP_Texture);
+            src_texture.dwWidth = ((mip_width + block_dim_x - 1) / block_dim_x) * block_dim_x;
+            src_texture.dwHeight = ((mip_height + block_dim_y - 1) / block_dim_y) * block_dim_y;
+            src_texture.dwPitch = src_texture.dwWidth * input_components;
+            src_texture.format = CMP_FORMAT_RGBA_8888;
+            src_texture.nBlockWidth = 1;
+            src_texture.nBlockHeight = 1;
+            src_texture.nBlockDepth = 1;
+            src_texture.dwDataSize = CMP_CalculateBufferSize(&src_texture);
+            src_texture.pData = img.input_mips[mip].bytes.data();
             qprintf("compressing mip %u layer %d: width=%d height=%d pitch_x=%d pitch_y=%d\n", mip, layer, mip_width,
-                    mip_height, input_surface.width, input_surface.height);
+                    mip_height, src_texture.dwWidth, src_texture.dwHeight);
 
-            int num_blocks = (input_surface.width / block_dim_x) * (input_surface.height / block_dim_y);
-            output_mip_sizes[mip] = num_blocks * bytes_per_block;
+            CMP_Texture dst_texture = {};
+            dst_texture.dwSize = sizeof(CMP_Texture);
+            dst_texture.dwWidth = src_texture.dwWidth;
+            dst_texture.dwHeight = src_texture.dwHeight;
+            dst_texture.dwPitch = 0;
+            dst_texture.nBlockWidth = (CMP_BYTE)block_dim_x;
+            dst_texture.nBlockHeight = (CMP_BYTE)block_dim_y;
+            dst_texture.nBlockDepth = (CMP_BYTE)block_dim_z;
+            dst_texture.format = format_info->cmp_format;
+            dst_texture.dwDataSize = CMP_CalculateBufferSize(&dst_texture);
+            output_mip_sizes[mip] = dst_texture.dwDataSize;
             img.output_mips[mip].bytes.resize(output_mip_sizes[mip]);
-            if (strcmp(output_format_name, "RGBA") == 0) {
-                img.output_mips[mip] = img.input_mips[mip];
-            } else if ((strcmp(output_format_name, "BC1") == 0) || (strcmp(output_format_name, "BC1a") == 0)) {
-                CompressBlocksBC1(&input_surface, img.output_mips[mip].bytes.data());
-            } else if (strcmp(output_format_name, "BC3") == 0) {
-                CompressBlocksBC3(&input_surface, img.output_mips[mip].bytes.data());
-            } else if (strcmp(output_format_name, "BC7") == 0) {
-                bc7_enc_settings enc_settings = {};
-                if (original_components == 3) {
-                    GetProfile_basic(&enc_settings);
-                } else if (original_components == 4) {
-                    GetProfile_alpha_basic(&enc_settings);
-                }
-                CompressBlocksBC7(&input_surface, img.output_mips[mip].bytes.data(), &enc_settings);
-            } else if (strncmp(output_format_name, "ASTC", 4) == 0) {
-                astc_enc_settings enc_settings = {};
-                if (original_components == 3) {
-                    GetProfile_astc_fast(&enc_settings, format_info->block_dim_x, format_info->block_dim_y);
-                } else if (original_components == 4) {
-                    GetProfile_astc_alpha_fast(&enc_settings, format_info->block_dim_x, format_info->block_dim_y);
-                }
-                CompressBlocksASTC(&input_surface, img.output_mips[mip].bytes.data(), &enc_settings);
+            dst_texture.pData = (CMP_BYTE *)img.output_mips[mip].bytes.data();
+
+            CMP_ERROR cmp_status;
+            cmp_status = CMP_ConvertTexture(&src_texture, &dst_texture, &options, NULL, NULL, NULL);
+            if (cmp_status != CMP_OK) {
+                std::printf("Compression returned an error %d\n", cmp_status);
+                return cmp_status;
             }
+
             mip_width = std::max(1, mip_width / 2);
             mip_height = std::max(1, mip_height / 2);
         }

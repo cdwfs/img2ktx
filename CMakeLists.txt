@@ -24,9 +24,4 @@ IF(${UNIX})
     TARGET_LINK_LIBRARIES(img2ktx PRIVATE m)
 ENDIF()
 
-FIND_LIBRARY(IMG2KTX_ISPC_TEXCOMP_LIB
-    ispc_texcomp
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR} # Finds the pre-build Windows binary as a last resort
-    DOC "the ispc_texcomp library to link against"
-    )
-TARGET_LINK_LIBRARIES(img2ktx PRIVATE ${IMG2KTX_ISPC_TEXCOMP_LIB})
+TARGET_LINK_LIBRARIES(img2ktx PRIVATE Compressonator)
