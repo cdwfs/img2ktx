@@ -30,4 +30,3 @@ It may eventually do the following things as well:
   because inevitably somebody is going to ask for it.
 - Convert animated GIFs directly into array textures, because what 3D graphics application isn't
   improved by animated GIFs?
-- Run as a web server, with CGI and XMLRPC interfaces.
