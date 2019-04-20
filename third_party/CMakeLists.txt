@@ -225,7 +225,7 @@ SET(COMPRESSONATOR_HEADERS
 )
 # The dependency on OpenEXR is solely to use the Half implementation in ilmbase.
 # I wish there were a better way to avoid cloning 100s of MB for ~1MB of code.
-SET(COMPRESSONATOR_OPENEXR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Compressonator/Common/Lib/Ext/OpenEXR CACHE PATH "Base directory for OpenEXR")
+SET(COMPRESSONATOR_OPENEXR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/FakeOpenEXR CACHE PATH "Base directory for OpenEXR")
 LIST(APPEND COMPRESSONATOR_HEADERS "${COMPRESSONATOR_OPENEXR_DIR}/ilmbase-2.2.0/Half/half.h")
 LIST(APPEND COMPRESSONATOR_SOURCES "${COMPRESSONATOR_OPENEXR_DIR}/ilmbase-2.2.0/Half/half.cpp")
 
