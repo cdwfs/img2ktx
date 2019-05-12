@@ -365,6 +365,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Output to KTX
+    uint32_t zero = 0;
     KtxHeader header = {};
     const uint8_t ktx_magic_id[12] = {
         0xAB, 0x4B, 0x54, 0x58,
@@ -386,14 +387,19 @@ int main(int argc, char *argv[]) {
     header.numberOfArrayElements = (real_array_element_count > 1) ? real_array_element_count : 0;
     header.numberOfFaces = output_as_cubemap ? 6 : 1;
     header.numberOfMipmapLevels = mip_levels;
-    header.bytesOfKeyValueData = 0;
+    uint32_t orientationKeyValueSize = (uint32_t)(strlen("KTXorientation") + 1 + strlen("S=r,T=d") + 1);
+    header.bytesOfKeyValueData = (4 + orientationKeyValueSize + 3) & ~3;
     FILE *output_file = fopen(output_filename, "wb");
     if (!output_file) {
         fprintf(stderr, "Error opening output '%s'\n", output_filename);
         return 3;
     }
     fwrite(&header, 1, sizeof(KtxHeader), output_file);
-    uint32_t zero = 0;
+    fwrite(&orientationKeyValueSize, 1, sizeof(uint32_t), output_file);
+    fprintf(output_file, "KTXorientation");
+    fprintf(output_file, "S=r,T=d");
+    uint32_t key_value_padding = (4 - (ftell(output_file) % 4)) % 4;
+    fwrite(&zero, 1, key_value_padding, output_file);
     for(int mip=0; mip<mip_levels; ++mip) {
         uint32_t image_size = (output_as_cubemap && header.numberOfArrayElements == 0)
             ? output_mip_sizes[mip]  // non-array cubemaps store the unpadded size of one face
