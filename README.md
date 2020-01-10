@@ -13,8 +13,8 @@ It optionally generates mipmap chains with [stb_image_resize](http://github.com/
 
 It compresses the mipmaps to BC1, BC3, BC7, ETC1, or ASTC with AMD's
 [Compressonator](https://github.com/GPUOpen-Tools/Compressonator/). It can also
-output uncompressed 32-bit RGBA images. Compressonator is included as a submodule; remember to
-pass `--recursive` to `git clone` in order to get it and its dependencies.
+output uncompressed 32-bit RGBA images. Compressonator is included as a submodule;
+run `git submodule update --init` after cloning.
 
 It writes the compressed images to a [KTX](https://www.khronos.org/opengles/sdk/tools/KTX/) file.
 If more than one image is provided with identical dimensions, the output KTX file can be either a

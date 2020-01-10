@@ -13,6 +13,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <vector>
 
 enum {
@@ -100,13 +101,13 @@ const CompressedFormatInfo g_formats[] = {
 };
 const size_t g_format_count = sizeof(g_formats) / sizeof(g_formats[0]);
 
-struct MipLevel {
+struct ImageMipLevel {
     std::vector<uint8_t> bytes;
 };
 struct ImagePixels {
     stbi_uc *packed;  // base mip level only, tightly packed
-    std::vector<MipLevel> input_mips;  // padded
-    std::vector<MipLevel> output_mips;
+    std::vector<ImageMipLevel> input_mips;  // padded
+    std::vector<ImageMipLevel> output_mips;
 };
 
 struct KtxHeader {
@@ -198,14 +199,14 @@ int main(int argc, char *argv[]) {
     }
 
     // Look up the output format info
-    const CompressedFormatInfo *format_info = NULL;
+    const CompressedFormatInfo *format_info = nullptr;
     for (int f = 0; f < g_format_count; ++f) {
         if (strcmp(g_formats[f].name, output_format_name) == 0) {
             format_info = g_formats + f;
             break;
         }
     }
-    if (format_info == NULL) {
+    if (format_info == nullptr) {
         fprintf(stderr, "Error: format %s not supported\n", output_format_name);
         return 1;
     }
@@ -360,7 +361,7 @@ int main(int argc, char *argv[]) {
             dst_texture.pData = (CMP_BYTE *)img.output_mips[mip].bytes.data();
 
             CMP_ERROR cmp_status;
-            cmp_status = CMP_ConvertTexture(&src_texture, &dst_texture, &options, NULL, NULL, NULL);
+            cmp_status = CMP_ConvertTexture(&src_texture, &dst_texture, &options, nullptr);
             if (cmp_status != CMP_OK) {
                 std::printf("Compression returned an error %d\n", cmp_status);
                 return cmp_status;
