@@ -1,3 +1,5 @@
+#include "build_version.h"
+
 #include "ispc_texcomp.h"
 
 #pragma warning(push,3)
@@ -119,23 +121,29 @@ struct KtxHeader {
     uint32_t bytesOfKeyValueData;
 };
 
+void PrintVersion() {
+  fprintf(stdout, "img2ktx %s\n", img2ktx_build_version);
+}
+
 void PrintUsage(char *argv[]) {
-    fprintf(stderr, "Usage: %s [options] [input]\n", argv[0]);
-    fprintf(stderr, "options:\n");
-    fprintf(stderr, "  -o [out.ktx]      Output file [required]\n");
-    fprintf(stderr, "  -f [format]       Output format [required]\n");
-    fprintf(stderr, "  -r [width height] Resize input to width x height before conversion.\n");
-    fprintf(stderr, "                    Provided dimensions must both be >= 1.\n");
-    fprintf(stderr, "  -m                Enable mipmap generation\n");
-    fprintf(stderr, "  -c                Enable cubemap output. Each set of six input images will be\n");
-    fprintf(stderr, "                    treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.\n");
-    fprintf(stderr, "  -q                Enable quiet mode (suppress non-error console output)\n");
-    fprintf(stderr, "  -h                Displays this help message\n");
-    fprintf(stderr, "formats:\n  ");
+    PrintVersion();
+    fprintf(stdout, "Usage: %s [options] [input]\n", argv[0]);
+    fprintf(stdout, R"options(options:
+  -o [out.ktx]      Output file [required]
+  -f [format]       Output format [required]
+  -r [width height] Resize input to width x height before conversion.
+                    Provided dimensions must both be >= 1.
+  -m                Enable mipmap generation
+  -c                Enable cubemap output. Each set of six input images will be
+                    treated as one cubemap. Face order is +X -X +Y -Y +Z -Z.
+  -q                Enable quiet mode (suppress non-error console output)
+  -h                Displays this help message
+  -v                Displays version information\)options");
+    fprintf(stdout, "formats:\n  ");
     for(int i=0; i<g_format_count; ++i) {
-        fprintf(stderr, "%s ", g_formats[i].name);
+        fprintf(stdout, "%s ", g_formats[i].name);
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 }
 
 #define qprintf(msg, ...) if (!quiet_mode) { printf( (msg), __VA_ARGS__); }
@@ -167,6 +175,10 @@ int main(int argc, char *argv[]) {
         } else if (strcmp("-h", argv[a]) == 0) {
             PrintUsage(argv);
             return 0;
+        }
+        else if (strcmp("-v", argv[a]) == 0) {
+          PrintVersion();
+          return 0;
         } else {
             // All remaining params are input filenames
             input_filenames.insert(input_filenames.end(), argv+a, argv+argc);
