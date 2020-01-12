@@ -1,0 +1,1 @@
+const char* img2ktx_build_version = "@GIT_DESCRIBE_RESULT@";
