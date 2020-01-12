@@ -3,8 +3,7 @@ img2ktx
 
 img2ktx is a simple command-line utility.
 
-It currently runs on Windows, Linux and MacOS.  Use [CMake](https://cmake.org) to generate
-a project file for your platform.
+It currently runs on Windows, Linux and MacOS.
 
 It loads images with [stb_image](https://github.com/nothings/stb). Supported formats include
 JPEG, PNG, BMP, TGA, GIF, etc.
@@ -20,11 +19,24 @@ It writes the compressed images to a [KTX](https://www.khronos.org/opengles/sdk/
 If more than one image is provided with identical dimensions, the output KTX file can be either a
 2D texture array or a cubemap.
 
+Compile
+-------
+img2ktx uses submodules for its dependencies. After cloning the repository, be sure to fetch
+these dependencies:
+```
+$ git submodule update --init
+```
+
+Then use [CMake](https://cmake.org) 3.15+ to generate a project file for your platform.
+
+Binaries
+--------
 Download pre-built binaries from the [Releases](https://github.com/cdwfs/img2ktx/releases) page.
 
-That's it!
 
-It may eventually do the following things as well:
+TODO
+----
+img2ktx may eventually do the following things as well (but no promises):
 
 - Output [DDS](https://msdn.microsoft.com/en-us/library/windows/desktop/bb943991(v=vs.85).aspx) files,
   because inevitably somebody is going to ask for it.

@@ -21,3 +21,5 @@ find_library(IMG2KTX_ISPC_TEXCOMP_LIB
   DOC "the ispc_texcomp library to link against"
 )
 target_link_libraries(img2ktx PRIVATE ${IMG2KTX_ISPC_TEXCOMP_LIB})
+
+add_subdirectory(third_party)
