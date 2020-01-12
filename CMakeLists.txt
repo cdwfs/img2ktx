@@ -1,19 +1,23 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.15)
 
 project(img2ktx)
 
-ADD_EXECUTABLE(img2ktx ${CMAKE_CURRENT_SOURCE_DIR}/img2ktx.cpp)
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>) # requires CMake 3.15
 
-IF(${MSVC})
-    TARGET_COMPILE_OPTIONS(img2ktx PRIVATE -W4 -MT -EHsc -wd4996)
-ELSEIF(${UNIX})
-    SET_PROPERTY(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
-    TARGET_LINK_LIBRARIES(img2ktx PRIVATE m)
-ENDIF()
+add_executable(img2ktx "")
+target_sources(img2ktx PRIVATE ${CMAKE_CURRENT_LIST_DIR}/img2ktx.cpp)
 
-FIND_LIBRARY(IMG2KTX_ISPC_TEXCOMP_LIB
-    ispc_texcomp
-    PATHS ${CMAKE_CURRENT_SOURCE_DIR} # Finds the pre-build Windows binary as a last resort
-    DOC "the ispc_texcomp library to link against"
-    )
-TARGET_LINK_LIBRARIES(img2ktx PRIVATE ${IMG2KTX_ISPC_TEXCOMP_LIB})
+if(${MSVC})
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+  target_compile_options(img2ktx PRIVATE -W4 -EHsc -wd4996)
+elseif(${UNIX})
+  set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
+  target_link_libraries(img2ktx PRIVATE m)
+endif()
+
+find_library(IMG2KTX_ISPC_TEXCOMP_LIB
+  ispc_texcomp
+  PATHS ${CMAKE_CURRENT_SOURCE_DIR} # Finds the pre-build Windows binary as a last resort
+  DOC "the ispc_texcomp library to link against"
+)
+target_link_libraries(img2ktx PRIVATE ${IMG2KTX_ISPC_TEXCOMP_LIB})
