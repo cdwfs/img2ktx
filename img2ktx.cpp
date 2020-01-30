@@ -288,7 +288,6 @@ int main(int argc, char *argv[]) {
     CMP_CompressOptions options = {};
     options.dwSize = sizeof(CMP_CompressOptions);
     options.fquality = 0.05f;
-    options.dwnumThreads = 8;
     if (std::string(format_info->name) == "BC1a") {
         options.bDXT1UseAlpha = 1;
     }
