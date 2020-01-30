@@ -8,9 +8,6 @@
 
 #pragma warning(disable : 4702)  // unreachable code
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#define STBI_MALLOC(sz) malloc(sz)
-#define STBI_REALLOC(p, newsz) realloc(p, newsz)
-#define STBI_FREE(p) free(p)
 #include <stb_image_resize.h>
 #pragma warning(pop)
 
