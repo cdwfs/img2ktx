@@ -12,7 +12,7 @@ if(${MSVC})
   target_compile_options(img2ktx PRIVATE -W4 -EHsc -wd4996)
 elseif(${UNIX})
   set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
-  target_link_libraries(img2ktx PRIVATE m)
+  target_link_libraries(img2ktx PRIVATE m pthread)
 endif()
 
 # Update build_version.h whenever current commit changes
