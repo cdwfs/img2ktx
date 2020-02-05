@@ -1,6 +1,10 @@
+cmake_minimum_required(VERSION 3.10)
+
 # Suppress all warnings from external projects.
 if(${MSVC})
   set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS /W0)
+  SET(CMAKE_CXX_FLAGS_RELEASE "/MT" CACHE TYPE STRING FORCE)
+  SET(CMAKE_CXX_FLAGS_DEBUG   "/MTd" CACHE TYPE STRING FORCE)
 elseif(${UNIX})
   set_property(DIRECTORY APPEND PROPERTY COMPILE_OPTIONS -w)
 endif()
@@ -20,5 +24,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
   # It is disabled by default in the Compressonator project, so I will do the same here.
   target_compile_definitions(Compressonator PRIVATE DISABLE_TESTCODE)
 endif()
-target_link_libraries(img2ktx PRIVATE Compressonator)
+# This line should be here instead of the root-level CMakeLists.txt, but would require CMake 3.13 (see CMP0079 for details)
+# target_link_libraries(img2ktx PRIVATE Compressonator)
 target_include_directories(img2ktx PRIVATE ${COMPRESSONATOR_DIR})
